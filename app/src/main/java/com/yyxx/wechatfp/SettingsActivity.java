@@ -34,15 +34,14 @@ public class SettingsActivity extends PreferenceActivity implements Preference.O
      * A preference value change listener that updates the preference's summary
      * to reflect its new value.
      */
-    private SharedPreferences prefs,defaultprefs;
+    private SharedPreferences prefs;
     private EditTextPreference mPaypwd;
     private CheckBoxPreference mEnable;
     private FingerprintIdentify mFingerprintIdentify;
-    private static final String MOD_PREFS = "fp_settings";
+
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        prefs=getSharedPreferences(MOD_PREFS, 1);
-        defaultprefs= PreferenceManager.getDefaultSharedPreferences(this);
+        prefs = XPreferenceProvider.getRemoteSharedPreference(this);
         addPreferencesFromResource(R.xml.preference);
         mEnable=(CheckBoxPreference)findPreference("enable_fp");
         mPaypwd=(EditTextPreference)findPreference("paypwd");
@@ -73,7 +72,6 @@ public class SettingsActivity extends PreferenceActivity implements Preference.O
     public boolean onPreferenceChange(Preference preference, Object newValue) {
         if(preference==mPaypwd){
             SharedPreferences.Editor mEditor=prefs.edit();
-            SharedPreferences.Editor dmEditor=defaultprefs.edit();
 
             String ANDROID_ID = Settings.System.getString(getContentResolver(), Settings.System.ANDROID_ID);
             Log.e("deviceid",ANDROID_ID);
@@ -82,20 +80,14 @@ public class SettingsActivity extends PreferenceActivity implements Preference.O
             Log.e("deviceid",AESHelper.encrypt(pwd,ANDROID_ID));
             if(pwd.length()>10){
                 mEditor.putString("paypwd",pwd);
-                dmEditor.putString("paypwd",pwd);
             }else{
                 mEditor.putString("paypwd", AESHelper.encrypt(pwd,ANDROID_ID));
-                dmEditor.putString("paypwd", AESHelper.encrypt(pwd,ANDROID_ID));
             }
-            dmEditor.commit();
             return mEditor.commit();
         }
         if(preference==mEnable){
             SharedPreferences.Editor mEditor=prefs.edit();
-            SharedPreferences.Editor dmEditor=defaultprefs.edit();
             mEditor.putBoolean("enable_fp",(boolean)newValue);
-            mEditor.putBoolean("enable_fp",(boolean)newValue);
-            dmEditor.commit();
             return mEditor.commit();
         }
         return false;

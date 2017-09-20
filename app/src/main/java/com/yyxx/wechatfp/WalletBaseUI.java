@@ -20,7 +20,6 @@ import android.widget.Toast;
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.IXposedHookZygoteInit;
 import de.robv.android.xposed.XC_MethodHook;
-import de.robv.android.xposed.XSharedPreferences;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
@@ -37,7 +36,6 @@ import com.yyxx.wechatfp.Utils.AESHelper;
 public class WalletBaseUI implements IXposedHookZygoteInit, IXposedHookLoadPackage {
     private static Activity WalletPayUI_Activity=null;
     private static EditText mInputEditText=null;
-    private static XSharedPreferences XMOD_PREFS = null;
     private RelativeLayout Passwd;
     private ImageView fingerprint;
     private RelativeLayout fp_linear;
@@ -46,9 +44,6 @@ public class WalletBaseUI implements IXposedHookZygoteInit, IXposedHookLoadPacka
     private static boolean needfp;
     public static final String WECHAT_PACKAGENAME = "com.tencent.mm";
     public void initZygote(StartupParam startupParam) throws Throwable {
-        XMOD_PREFS = new XSharedPreferences("com.yyxx.wechatfp", "fp_settings");
-        XMOD_PREFS.makeWorldReadable();
-        XposedBridge.log("设置数量"+String.valueOf(XMOD_PREFS.getAll().size()));
     }
 
     @Override
@@ -56,7 +51,7 @@ public class WalletBaseUI implements IXposedHookZygoteInit, IXposedHookLoadPacka
         XposedBridge.log("loaded: " + lpparam.packageName);
         if (lpparam.packageName.equals(WECHAT_PACKAGENAME)) {
             try {
-                Context context = (Context) XposedHelpers.callMethod(XposedHelpers.callStaticMethod(XposedHelpers.findClass("android.app.ActivityThread", null), "currentActivityThread", new Object[0]), "getSystemContext", new Object[0]);
+                final Context context = (Context) XposedHelpers.callMethod(XposedHelpers.callStaticMethod(XposedHelpers.findClass("android.app.ActivityThread", null), "currentActivityThread", new Object[0]), "getSystemContext", new Object[0]);
                 if (ObfuscationHelper.init(context.getPackageManager().getPackageInfo(WECHAT_PACKAGENAME, 0).versionCode, context.getPackageManager().getPackageInfo(WECHAT_PACKAGENAME, 0).versionName, lpparam)) {
                     XposedHelpers.findAndHookMethod(MM_Classes.PayUI, "onCreate",Bundle.class, new XC_MethodHook() {
                         @TargetApi(21)
@@ -76,9 +71,10 @@ public class WalletBaseUI implements IXposedHookZygoteInit, IXposedHookLoadPacka
                         @TargetApi(21)
                         protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                             boolean mEnable;
-                            XMOD_PREFS.reload();
-                            if(XMOD_PREFS.getAll().size()>0){
-                                mEnable = XMOD_PREFS.getBoolean("enable_fp",false);
+                            SharedPreferences prefs = XPreferenceProvider.getRemoteSharedPreference(context);
+                            XposedBridge.log("设置数量" + String.valueOf(prefs.getAll().size()));
+                            if(prefs.getAll().size()>0){
+                                mEnable = prefs.getBoolean("enable_fp",false);
                             }else{
                                 mEnable = false;
                             }
@@ -153,7 +149,7 @@ public class WalletBaseUI implements IXposedHookZygoteInit, IXposedHookLoadPacka
                 public void onSucceed() {
                     // 验证成功，自动结束指纹识别
                     Toast.makeText(WalletPayUI_Activity, "指纹识别成功", Toast.LENGTH_SHORT).show();
-                    onSuccessUnlock();
+                    onSuccessUnlock(WalletPayUI_Activity);
                 }
 
                 @Override
@@ -177,11 +173,13 @@ public class WalletBaseUI implements IXposedHookZygoteInit, IXposedHookLoadPacka
             });
         }
     }
-    private static void onSuccessUnlock() {
+    private static void onSuccessUnlock(Context context) {
         String pwd;
         String ANDROID_ID = Settings.System.getString(WalletPayUI_Activity.getContentResolver(), Settings.System.ANDROID_ID);
-        if(XMOD_PREFS.getAll().size() > 0){
-            pwd= XMOD_PREFS.getString("paypwd", "");
+        SharedPreferences prefs = XPreferenceProvider.getRemoteSharedPreference(context);
+        XposedBridge.log("设置数量" + String.valueOf(prefs.getAll().size()));
+        if(prefs.getAll().size() > 0){
+            pwd= prefs.getString("paypwd", "");
         }else{
             pwd="";
         }

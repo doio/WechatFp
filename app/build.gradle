@@ -33,6 +33,7 @@ dependencies {
     })
     compile 'com.android.support:support-v4:25.1.0'
     compile 'com.wei.android.lib:fingerprintidentify:1.2.1'
+    compile 'com.crossbowffs.remotepreferences:remotepreferences:0.5'
     provided 'de.robv.android.xposed:api:53'
     provided 'de.robv.android.xposed:api:53:sources'
 

@@ -32,6 +32,11 @@
             </intent-filter>
         </activity>
 
+        <provider
+            android:name="com.yyxx.wechatfp.XPreferenceProvider"
+            android:authorities="com.yyxx.wechatfp.XPreferenceProvider"
+            android:exported="true" />
+
     </application>
 
 </manifest>
